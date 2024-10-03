@@ -6,12 +6,16 @@
 
 ## Resources
 
-- [LeafletJS](https://leafletjs.com) 📓
+- [Leaflet.js](https://leafletjs.com) 📓
   - [LeafletForBlazor](https://github.com/ichim/LeafletForBlazor-NuGet) 👤*Laurentiu Ichim*
 - CosmosDB
   - [Geospatial data](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/geospatial) 📚*MS-Learn*
   - [Index and query location data](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-geospatial-index-query) 📚*MS-Learn*
   - [Playing with Azure CosmosDB](https://github.com/19balazs86/AzureCosmosDB) 👤*My repository*
+- Miscellaneous
+  - [Turf.js](https://turfjs.org) 📓 - *Advanced geospatial analysis*
+  - [GeoJSON.io](https://geojson.io) 📓
+
 
 ## Screen
 
