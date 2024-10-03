@@ -13,6 +13,7 @@
   - [Index and query location data](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-geospatial-index-query) 📚*MS-Learn*
   - [Playing with Azure CosmosDB](https://github.com/19balazs86/AzureCosmosDB) 👤*My repository*
 - Miscellaneous
+  - [OpenStreetMap](https://www.openstreetmap.org)
   - [Turf.js](https://turfjs.org) 📓 - *Advanced geospatial analysis*
   - [GeoJSON.io](https://geojson.io) 📓
 
