@@ -1,5 +1,4 @@
-﻿
-using MongoDB.Driver.GeoJsonObjectModel;
+﻿using MongoDB.Driver.GeoJsonObjectModel;
 
 namespace GeospatialWeb.Services.MongoDB.Models;
 

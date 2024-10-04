@@ -91,9 +91,9 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
 
         using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
 
-        CountrySeedRecord[]? countrySeedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
+        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
 
-        List<Position> geoFencePoints = countrySeedRecords!.Select(c => new Position(c.Lng, c.Lat)).ToList();
+        List<Position> geoFencePoints = seedRecords!.Select(c => new Position(c.Lng, c.Lat)).ToList();
 
         var country = new Country
         {

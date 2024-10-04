@@ -73,8 +73,8 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
 
         IMongoCollection<PoiData> poiCollection = await getCollectionWithIndex<PoiData>(PoiData.CollectionName, p => p.Location, p => p.CountryName, ct);
 
-        await databaseSeed_POIs(poiCollection, "France", ct);
-        await databaseSeed_POIs(poiCollection, "Spain",  ct);
+        await databaseSeed_POIs(poiCollection, "France",  ct);
+        await databaseSeed_POIs(poiCollection, "Spain",   ct);
         await databaseSeed_POIs(poiCollection, "Ireland", ct);
     }
 
@@ -82,9 +82,9 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
     {
         using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
 
-        CountrySeedRecord[]? countrySeedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
+        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
 
-        var geoFence_Coordinates = countrySeedRecords!.Select(c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat)).ToArray();
+        var geoFence_Coordinates = seedRecords!.Select(c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat)).ToArray();
 
         var country = new Country
         {
