@@ -1,8 +1,9 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using GeospatialWeb.Services.CosmosDB;
+using Microsoft.Azure.Cosmos;
 
-namespace GeospatialWeb.Services.CosmosDB;
+namespace GeospatialWeb.Services;
 
-public static class InfrastructureExtensions
+public static class InfrastructureExtensionsCosmos
 {
     public static void AddCosmosInfrastructure(this IHostApplicationBuilder builder)
     {

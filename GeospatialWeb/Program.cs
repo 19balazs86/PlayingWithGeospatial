@@ -1,6 +1,5 @@
 using GeospatialWeb.Components;
 using GeospatialWeb.Services;
-using GeospatialWeb.Services.CosmosDB;
 
 namespace GeospatialWeb;
 
@@ -18,6 +17,8 @@ public static class Program
             services.AddHostedService<DbSeedService>();
 
             builder.AddCosmosInfrastructure();
+
+            // builder.AddMongoInfrastructure();
         }
 
         WebApplication app = builder.Build();
