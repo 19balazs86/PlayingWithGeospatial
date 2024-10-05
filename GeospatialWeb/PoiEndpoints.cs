@@ -4,7 +4,7 @@ namespace GeospatialWeb;
 
 public readonly record struct PoiRequest(double Lat, double Lng, double Distance);
 
-public sealed record PoiResponse(Guid Id, string Name, string Category, double Lat, double Lng);
+public sealed record PoiResponse(Guid Id, string Name, string Category, double Lat, double Lng, double Distance);
 
 public static class PoiEndpoints
 {

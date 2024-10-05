@@ -29,18 +29,22 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
 
         Container container = _database.GetContainer(PoiData.ContainerId);
 
-        using FeedIterator<PoiData> feedIterator = container
+        using var feedIterator = container
             .GetItemLinqQueryable<PoiData>(requestOptions: requestOptions)
-            .Where(poi => poi.Location.Distance(point) <= poiRequest.Distance)
+            .Where(poi =>   poi.Location.Distance(point) <= poiRequest.Distance)
+            // .OrderBy(poi => poi.Location.Distance(point)) // This does not work
             // Lat and Lng do not get populated
             // .Select(poi => new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Latitude, poi.Location.Position.Longitude)
+            .Select(poi => new { Entity = poi, Distance = poi.Location.Distance(point) })
             .ToFeedIterator();
 
         while (feedIterator.HasMoreResults)
         {
-            foreach (PoiData poi in await feedIterator.ReadNextAsync(ct))
+            foreach (var item in await feedIterator.ReadNextAsync(ct))
             {
-                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Latitude, poi.Location.Position.Longitude);
+                PoiData poi = item.Entity;
+
+                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Latitude, poi.Location.Position.Longitude, item.Distance);
             }
         }
     }

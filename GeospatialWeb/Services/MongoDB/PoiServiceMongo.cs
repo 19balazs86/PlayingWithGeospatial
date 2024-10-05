@@ -35,7 +35,12 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
         {
             foreach (PoiData poi in asyncCursor.Current)
             {
-                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Coordinates.Latitude, poi.Location.Coordinates.Longitude);
+                double poiLat = poi.Location.Coordinates.Latitude;
+                double poiLng = poi.Location.Coordinates.Longitude;
+
+                double distance = Haversine.Distance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
+
+                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLat, poiLng, distance);
             }
         }
     }
