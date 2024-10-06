@@ -7,8 +7,6 @@
   - Azure CosmosDB | MongoDB | Redis | EntityFramework with PostgreSQL
   - Note: Using EF with PostgreSQL was somewhat cumbersome, I had to use a raw query...
 
-
-
 ## Resources
 
 - [Leaflet.js](https://leafletjs.com) 📓
@@ -24,7 +22,6 @@
   - [Playing with MongoDB](https://github.com/19balazs86/PlayingWithMongoDB) 👤*My repository*
 - Redis
   - [Commands - Geo](https://redis.io/docs/latest/commands/?group=geo)
-
 - NetTopologySuite with EntityFramework
   - [NetTopologySuite - API Documentation](https://nettopologysuite.github.io/NetTopologySuite/api/NetTopologySuite.html) 📓
   - [Entity Framework - Spatial mapping](https://www.npgsql.org/efcore/mapping/nts.html) 📓*Npgsql*
@@ -34,7 +31,6 @@
   - [OpenStreetMap](https://www.openstreetmap.org) 📓
   - [Turf.js](https://turfjs.org) 📓 - *Advanced geospatial analysis*
   - [GeoJSON.io](https://geojson.io) 📓
-
 
 ## Screen
 
