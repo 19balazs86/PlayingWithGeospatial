@@ -5,7 +5,7 @@
 - I used LeafletJS with OpenStreetMap
 - For database solutions, you can choose from various implementations in [Program.cs](GeospatialWeb/Program.cs)
   - Azure CosmosDB | MongoDB | Redis | EntityFramework with PostgreSQL
-  - Note: Using EF with PostgreSQL was somewhat cumbersome, I had to use a raw query...
+  - Note: PostgreSQL with EF  was somewhat cumbersome, I had to use a raw query...
 
 ## Resources
 
@@ -32,6 +32,12 @@
   - [Turf.js](https://turfjs.org) 📓 - *Advanced geospatial analysis*
   - [GeoJSON.io](https://geojson.io) 📓
   - [geoBoundaries](https://www.geoboundaries.org/index.html) 📓
+
+## Comparison summary
+- **Redis**: Fast for in-memory operations but limited by memory for large datasets. Better for real-time applications with smaller datasets.
+- **CosmosDB**: Highly scalable and efficient for large, distributed datasets, complex geospatial queries.
+- **MongoDB**: Good balance of performance and scalability, complex geospatial queries.
+- **PostgreSQL**: Handles complex geospatial queries with robust performance and scalability, but working with geo types in CosmosDB and MongoDB is more efficient than in PostgreSQL.
 
 ## Screen
 
