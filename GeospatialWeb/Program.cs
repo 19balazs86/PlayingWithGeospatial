@@ -19,6 +19,8 @@ public static class Program
             builder.AddCosmosInfrastructure();
 
             // builder.AddMongoInfrastructure();
+
+            // builder.AddEntityFrameworkInfrastructure();
         }
 
         WebApplication app = builder.Build();
