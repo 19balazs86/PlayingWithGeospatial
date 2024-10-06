@@ -1,4 +1,5 @@
-﻿using GeospatialWeb.Services.MongoDB.Models;
+﻿using GeospatialWeb.Geography;
+using GeospatialWeb.Services.MongoDB.Models;
 using MongoDB.Driver;
 using MongoDB.Driver.GeoJsonObjectModel;
 using System.Linq.Expressions;
@@ -37,7 +38,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
             {
                 (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-                double distance = GeographyUtils.HaversineDistance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
+                double distance = GeoUtils.HaversineDistance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
 
                 yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLat, poiLng, distance);
             }

@@ -12,6 +12,7 @@
 
 - [Leaflet.js](https://leafletjs.com) 📓
   - [LeafletForBlazor](https://github.com/ichim/LeafletForBlazor-NuGet) 👤*Laurentiu Ichim*
+  - [Leaflet routing machine](https://www.liedman.net/leaflet-routing-machine) 📓
 - CosmosDB
   - [Geospatial data](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/geospatial) 📚*MS-Learn*
   - [Index and query location data](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-geospatial-index-query) 📚*MS-Learn*
