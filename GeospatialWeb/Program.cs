@@ -16,11 +16,13 @@ public static class Program
 
             services.AddHostedService<DbSeedService>();
 
-            builder.AddCosmosInfrastructure();
+            // builder.AddCosmosInfrastructure();
 
             // builder.AddMongoInfrastructure();
 
             // builder.AddEntityFrameworkInfrastructure();
+
+            builder.AddRedisInfrastructure();
         }
 
         WebApplication app = builder.Build();

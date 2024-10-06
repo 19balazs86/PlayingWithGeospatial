@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.1" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="8.0.8" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
   </ItemGroup>
 
 </Project>
