@@ -3,16 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GeospatialWeb.Services.EntityFramework;
 
-public sealed class ApplicationDbContext : DbContext
+public sealed class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 {
+    public const int SRID = 4326;
+
     public DbSet<Country> Countries { get; set; }
 
     public DbSet<PoiData> POIs { get; set; }
-
-    public ApplicationDbContext(DbContextOptions options) : base(options)
-    {
-
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,5 +23,17 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<PoiData>()
             .HasIndex(p => p.Location)
             .HasMethod("gist");
+
+        modelBuilder.Entity<Country>(entity =>
+        {
+            entity.Property(e => e.GeoFence)
+                  .HasColumnType($"GEOGRAPHY(Polygon, {SRID})"); // Needs to be defined as GEOGRAPHY, otherwise it will be GEOMETRY
+        });
+
+        modelBuilder.Entity<PoiData>(entity =>
+        {
+            entity.Property(e => e.Location)
+                  .HasColumnType($"GEOGRAPHY(Point, {SRID})");
+        });
     }
 }
