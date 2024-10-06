@@ -22,7 +22,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
             yield break;
         }
 
-        var point = GeoJson.Point(new GeoJson2DGeographicCoordinates(poiRequest.Lng, poiRequest.Lat));
+        var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
 
         var nearFilter     = Builders<PoiData>.Filter.Near(p => p.Location, point, poiRequest.Distance);
         var whereFilter    = Builders<PoiData>.Filter.Where(p => p.CountryName == countryName);
@@ -35,10 +35,9 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
         {
             foreach (PoiData poi in asyncCursor.Current)
             {
-                double poiLat = poi.Location.Coordinates.Latitude;
-                double poiLng = poi.Location.Coordinates.Longitude;
+                (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-                double distance = Haversine.Distance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
+                double distance = GeographyUtils.HaversineDistance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
 
                 yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLat, poiLng, distance);
             }
@@ -47,7 +46,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
 
     public async Task<string?> FindCountryName(double latitude, double longitude, CancellationToken ct = default)
     {
-        var point = GeoJson.Point(new GeoJson2DGeographicCoordinates(longitude, latitude));
+        var point = GeoJsonUtils.Point(longitude, latitude);
 
         var filter = Builders<Country>.Filter.GeoIntersects(c => c.GeoFence, point);
 
@@ -117,7 +116,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
                 CountryName = countryName,
                 Category    = poiSeedRecord!.Category,
                 Name        = poiSeedRecord.Name,
-                Location    = GeoJson.Point(new GeoJson2DGeographicCoordinates(poiSeedRecord.Lng, poiSeedRecord.Lat))
+                Location    = GeoJsonUtils.Point(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };
 
             pois.Add(poiData);
@@ -148,5 +147,18 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
         await countryCollection.Indexes.CreateManyAsync(indexes, cancellationToken: ct);
 
         return countryCollection;
+    }
+}
+
+file static class GeoJsonUtils
+{
+    public static GeoJsonPoint<GeoJson2DGeographicCoordinates> Point(double longitude, double latitude)
+    {
+        return GeoJson.Point(new GeoJson2DGeographicCoordinates(longitude, latitude));
+    }
+
+    public static (double latitude, double longitude) GetLatLng(this GeoJsonPoint<GeoJson2DGeographicCoordinates> point)
+    {
+        return (point.Coordinates.Latitude, point.Coordinates.Longitude);
     }
 }

@@ -1,8 +1,8 @@
 namespace GeospatialWeb;
 
-public static class Haversine
+public static class GeographyUtils
 {
-    public static double Distance(double lat1, double lng1, double lat2, double lng2)
+    public static double HaversineDistance(double lat1, double lng1, double lat2, double lng2)
     {
         const double R = 6371000; // Radius of the Earth in meters
 
