@@ -2,7 +2,7 @@ namespace GeospatialWeb.Geography;
 
 public static class GeoUtils
 {
-    public static double HaversineDistance(double lat1, double lng1, double lat2, double lng2)
+    public static double HaversineDistance(double lng1, double lat1, double lng2, double lat2)
     {
         const double R = 6371000; // Radius of the Earth in meters
 

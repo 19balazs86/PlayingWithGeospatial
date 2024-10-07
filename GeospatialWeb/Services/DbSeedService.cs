@@ -1,8 +1,8 @@
 ﻿namespace GeospatialWeb.Services;
 
-public sealed record PoiSeedRecord(string Name, string Category, double Lat, double Lng);
+public sealed record PoiSeedRecord(string Name, string Category, double Lng, double Lat);
 
-public sealed record CountrySeedRecord(double Lat, double Lng);
+public sealed record CountrySeedRecord(double Lng, double Lat);
 
 public sealed class DbSeedService(IServiceScopeFactory _serviceScopeFactory) : BackgroundService
 {

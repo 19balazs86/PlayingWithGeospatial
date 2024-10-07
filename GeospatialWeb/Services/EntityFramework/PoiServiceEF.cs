@@ -13,7 +13,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
 
     public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lat, poiRequest.Lng, ct);
+        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -33,11 +33,11 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
         {
             PoiData poi = item.Entity;
 
-            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, Lat: poi.Location.Y, Lng: poi.Location.X, item.Distance);
+            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, Lng: poi.Location.X, Lat: poi.Location.Y, Distance: item.Distance);
         }
     }
 
-    public async Task<string?> FindCountryName(double latitude, double longitude, CancellationToken ct = default)
+    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         // This does not work: ST_Contains does not work with geography type
         // return _dbContext.Countries.Where(c => c.GeoFence.Contains(point)).FirstOrDefaultAsync(ct);

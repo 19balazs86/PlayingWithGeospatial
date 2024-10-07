@@ -2,23 +2,23 @@
 
 public readonly record struct GeoLocation
 {
-    public double Lat { get; init; }
     public double Lng { get; init; }
+    public double Lat { get; init; }
 
-    public GeoLocation(double lat, double lng)
+    public GeoLocation(double lng, double lat)
     {
-        if (!IsValidLatitude(lat))
-        {
-            throw new ArgumentOutOfRangeException(nameof(lat), "Latitude must be between -90 and 90 degrees.");
-        }
-
         if (!IsValidLongitude(lng))
         {
             throw new ArgumentOutOfRangeException(nameof(lng), "Longitude must be between -180 and 180 degrees.");
         }
 
-        Lat = lat;
+        if (!IsValidLatitude(lat))
+        {
+            throw new ArgumentOutOfRangeException(nameof(lat), "Latitude must be between -90 and 90 degrees.");
+        }
+
         Lng = lng;
+        Lat = lat;
     }
 
     public static bool IsValidLatitude(double lat)
@@ -31,9 +31,9 @@ public readonly record struct GeoLocation
         return lng is >= -180 and <= 180;
     }
 
-    public void Deconstruct(out double lat, out double lng)
+    public void Deconstruct(out double lng, out double lat)
     {
-        lat = Lat;
         lng = Lng;
+        lat = Lat;
     }
 }

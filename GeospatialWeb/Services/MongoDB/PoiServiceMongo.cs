@@ -16,7 +16,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
 
     public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lat, poiRequest.Lng, ct);
+        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -38,14 +38,14 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
             {
                 (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-                double distance = GeoUtils.HaversineDistance(poiLat, poiLng, poiRequest.Lat, poiRequest.Lng);
+                double distance = GeoUtils.HaversineDistance(poiLng, poiLat, poiRequest.Lng, poiRequest.Lat);
 
-                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLat, poiLng, distance);
+                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
             }
         }
     }
 
-    public async Task<string?> FindCountryName(double latitude, double longitude, CancellationToken ct = default)
+    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         var point = GeoJsonUtils.Point(longitude, latitude);
 

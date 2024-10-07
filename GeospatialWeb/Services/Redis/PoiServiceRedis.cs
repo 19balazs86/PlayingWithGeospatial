@@ -17,7 +17,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lat, poiRequest.Lng, ct);
+        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -44,13 +44,13 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
             // GeoPosition? geoPosition = result.Position.Value; // GeoRadiusOptions.WithCoordinates
 
-            yield return new PoiResponse(poiData!.Id, poiData.Name, poiData.Category, poiData.Location.Lat, poiData.Location.Lng, result.Distance.GetValueOrDefault(-1));
+            yield return new PoiResponse(poiData!.Id, poiData.Name, poiData.Category, poiData.Location.Lng, poiData.Location.Lat, result.Distance.GetValueOrDefault(-1));
         }
     }
 
-    public Task<string?> FindCountryName(double latitude, double longitude, CancellationToken ct = default)
+    public Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
-        var geoLocation = new GeoLocation(latitude, longitude);
+        var geoLocation = new GeoLocation(longitude, latitude);
 
         foreach (var item in _countryPolygons)
         {
@@ -89,7 +89,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
         CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
 
-        var geoFence_Coordinates = seedRecords!.Select(c => new GeoLocation(c.Lat, c.Lng)).ToList();
+        var geoFence_Coordinates = seedRecords!.Select(c => new GeoLocation(c.Lng, c.Lat)).ToList();
 
         var geoFence = new GeoPolygon(geoFence_Coordinates);
 
@@ -124,7 +124,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
                 Id       = Guid.NewGuid(),
                 Category = poiSeedRecord!.Category,
                 Name     = poiSeedRecord.Name,
-                Location = new GeoLocation(poiSeedRecord.Lat, poiSeedRecord.Lng)
+                Location = new GeoLocation(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };
 
             Task task = batch.GeoAddAsync(PoiData.GetGeoIdKey(countryName), poiSeedRecord.Lng, poiSeedRecord.Lat, poiData.Id.ToString());

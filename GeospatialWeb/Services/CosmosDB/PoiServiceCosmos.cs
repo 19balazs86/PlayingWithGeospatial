@@ -16,7 +16,7 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
 
     public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lat, poiRequest.Lng, ct);
+        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -44,12 +44,12 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
             {
                 PoiData poi = item.Entity;
 
-                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Latitude, poi.Location.Position.Longitude, item.Distance);
+                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Longitude, poi.Location.Position.Latitude, item.Distance);
             }
         }
     }
 
-    public async Task<string?> FindCountryName(double latitude, double longitude, CancellationToken ct = default)
+    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         Container container = _database.GetContainer(Country.ContainerId);
 
