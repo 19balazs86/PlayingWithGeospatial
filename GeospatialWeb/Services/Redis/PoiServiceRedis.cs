@@ -8,12 +8,11 @@ namespace GeospatialWeb.Services.Redis;
 
 public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexer) : IPoiService
 {
-    // Redis does not support filtering by a point within a polygon
-    private readonly Dictionary<string, GeoPolygon> _countryPolygons = [];
-
     private const int _dbNumber = 0;
 
     private readonly IDatabase _database = _connectionMultiplexer.GetDatabase(_dbNumber);
+
+    private LoadedLuaScript? _loadedLuaScript;
 
     public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
@@ -48,26 +47,25 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
         }
     }
 
-    public Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
+    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
-        var geoLocation = new GeoLocation(longitude, latitude);
-
-        foreach (var item in _countryPolygons)
+        var scriptParams = new
         {
-            if (GeoUtils.IsPointInPolygon(geoLocation, item.Value))
-            {
-                return Task.FromResult<string?>(item.Key);
-            }
-        }
+            keyPrefix = (RedisKey)$"{Country.GeoFencePolygonKey}",
+            pointLng  = longitude,
+            pointLat  = latitude
+        };
 
-        return Task.FromResult<string?>(string.Empty);
+        RedisResult result = await _loadedLuaScript!.EvaluateAsync(_database, scriptParams);
+
+        return result.ToString().Replace($"{Country.GeoFencePolygonKey}:", string.Empty);
     }
 
     public async Task DatabaseSeed(CancellationToken ct = default)
     {
-        await inicializeCountryPolygons();
+        _loadedLuaScript = await inicializeRayCastingLuaScript();
 
-        bool isDatabaseExists = _countryPolygons.Count > 0;
+        bool isDatabaseExists = await _database.KeyExistsAsync(PoiData.GetGeoIdKey("France"));
 
         if (isDatabaseExists)
         {
@@ -100,11 +98,11 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
             GeoFence = geoFence
         };
 
-        _countryPolygons[countryName] = geoFence;
-
         string countryJson = JsonSerializer.Serialize(country, CountrySerializationContext.Default.Country);
 
         await _database.StringSetAsync(country.GetIdKey(), countryJson);
+
+        await country.StoreGeoFence(_database);
     }
 
     private async Task databaseSeed_POIs(string countryName, CancellationToken ct = default)
@@ -143,21 +141,61 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
         await Task.WhenAll(tasks);
     }
 
-    private async Task inicializeCountryPolygons()
+    private async Task<LoadedLuaScript> inicializeRayCastingLuaScript()
     {
-        string pattern = $"{Country.CollectionName}:*";
+        LuaScript.PurgeCache();
 
         IServer server = _connectionMultiplexer.GetServers().First();
 
-        IAsyncEnumerable<RedisKey> asyncEnum = server.KeysAsync(_dbNumber, pattern: pattern);
+        return await LuaScriptDefinitions.PreparedRayCastingLuaScript.LoadAsync(server);
+    }
 
-        await foreach (RedisKey redisKey in asyncEnum)
+    //private async Task inicializeCountryPolygons()
+    //{
+    //    IServer server = _connectionMultiplexer.GetServers().First();
+    //    IAsyncEnumerable<RedisKey> asyncEnum = server.KeysAsync(_dbNumber, pattern: "KeyPrefix*");
+    //    await foreach (RedisKey redisKey in asyncEnum)
+    //    {
+    //        // ...
+    //    }
+    //}
+}
+
+file static class CountryExtensions
+{
+    // Each GeoFence coordinate is stored in a hash key as 2 bytes: (byte) longitude and (byte) latitude
+    // Bytes take up less space than text, and Redis performs better with struct.unpack on bytes than using tonumber on text
+    public static async Task StoreGeoFence(this Country country, IDatabase database)
+    {
+        var points = country.GeoFence.Points;
+
+        for (int i = 0; i < points.Count; i++)
         {
-            string? countryJson = await _database.StringGetAsync(redisKey);
+            GeoLocation geoLocation = points[i];
 
-            Country? country = JsonSerializer.Deserialize<Country?>(countryJson!);
+            byte[] bytesToStore = convertToBytes(geoLocation.Lng, geoLocation.Lat);
 
-            _countryPolygons[country!.Name] = country.GeoFence;
+            RedisKey key = $"{Country.GeoFencePolygonKey}:{country.Name}";
+
+            RedisValue field = (i + 1);
+
+            await database.HashSetAsync(key, field, bytesToStore);
         }
+    }
+
+    private static byte[] convertToBytes(double[] coordinates)
+    {
+        int totalLength = coordinates.Length * sizeof(double);
+
+        byte[] binaryData = new byte[totalLength];
+
+        Buffer.BlockCopy(coordinates, 0, binaryData, 0, totalLength);
+
+        return binaryData;
+    }
+
+    private static byte[] convertToBytes(double lng, double lat)
+    {
+        return convertToBytes([lng, lat]);
     }
 }

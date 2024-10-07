@@ -34,7 +34,7 @@
   - [geoBoundaries](https://www.geoboundaries.org/index.html) 📓
 
 ## Comparison summary
-- **Redis**: Fast for in-memory operations but limited by memory for large datasets. Better for real-time applications with smaller datasets.
+- **Redis**: Fast for in-memory operations but limited by memory for large datasets. Complex geospatial queries and Polygon types are not supported. Better for real-time applications with smaller datasets.
 - **CosmosDB**: Highly scalable and efficient for large, distributed datasets, complex geospatial queries.
 - **MongoDB**: Good balance of performance and scalability, complex geospatial queries.
 - **PostgreSQL**: Handles complex geospatial queries with robust performance and scalability, but working with geo types in CosmosDB and MongoDB is more efficient than in PostgreSQL.

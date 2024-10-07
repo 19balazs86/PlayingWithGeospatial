@@ -5,7 +5,8 @@ namespace GeospatialWeb.Services.Redis.Models;
 
 public sealed class Country
 {
-    public const string CollectionName = "Countries";
+    public const string CollectionName     = "Countries";
+    public const string GeoFencePolygonKey = "GeoFencePolygon";
 
     public Guid Id { get; set; }
 
