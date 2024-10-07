@@ -3,16 +3,14 @@
 <PageTitle>POI</PageTitle>
 
 <div class="container">
-    <div>
-        <button onclick="mapWrapper.onClick_FindMe()">Find Me</button>
-
-        <button onclick="mapWrapper.onClick_SearchPoi()">Search POI</button>
-
-        <input type="checkbox" id="zoomRefreshCheckbox"> zoom-refresh
+    <div class="controls">
+        <button class="button" onclick="mapWrapper.onClick_FindMe()">Find Me</button>
+        <button class="button" onclick="mapWrapper.onClick_SearchPoi()">Search POI</button>
+        <label class="checkbox-label">
+            <input type="checkbox" id="zoomRefreshCheckbox"> zoom-refresh
+        </label>
     </div>
 </div>
-
-<br />
 
 <div class="container">
     <div id="map"></div>
