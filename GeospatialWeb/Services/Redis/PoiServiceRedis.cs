@@ -25,25 +25,38 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
         string geoPoisKey = PoiData.GetGeoIdKey(countryName);
 
-        GeoRadiusResult[] results = await _database.GeoRadiusAsync(
+        GeoRadiusResult[] radiusResults = await _database.GeoRadiusAsync(
             geoPoisKey, poiRequest.Lng, poiRequest.Lat, poiRequest.Distance, GeoUnit.Meters, options: GeoRadiusOptions.WithDistance);
 
-        foreach (var result in results)
-        {
-            string poiKey = PoiData.GetIdKey(countryName, result.Member!);
+        var tasks = new Task<RedisValue>[radiusResults.Length];
 
-            string? poiJson = await _database.StringGetAsync(poiKey);
+        IBatch batch = _database.CreateBatch();
+
+        for (int i = 0; i < radiusResults.Length; i++)
+        {
+            string poiKey = PoiData.GetIdKey(countryName, radiusResults[i].Member!);
+
+            tasks[i] = batch.StringGetAsync(poiKey);
+        }
+
+        batch.Execute();
+
+        RedisValue[] results = await Task.WhenAll(tasks);
+
+        for (int i = 0; i < radiusResults.Length; i++)
+        {
+            string? poiJson = results[i];
 
             if (string.IsNullOrEmpty(poiJson))
             {
-                throw new NullReferenceException($"Poi({poiKey}) does not exists");
+                throw new NullReferenceException($"Poi({PoiData.GetIdKey(countryName, radiusResults[i].Member!)}) does not exists");
             }
 
             PoiData? poiData = JsonSerializer.Deserialize<PoiData?>(poiJson);
 
             // GeoPosition? geoPosition = result.Position.Value; // GeoRadiusOptions.WithCoordinates
 
-            yield return new PoiResponse(poiData!.Id, poiData.Name, poiData.Category, poiData.Location.Lng, poiData.Location.Lat, result.Distance.GetValueOrDefault(-1));
+            yield return new PoiResponse(poiData!.Id, poiData.Name, poiData.Category, poiData.Location.Lng, poiData.Location.Lat, radiusResults[i].Distance.GetValueOrDefault(-1));
         }
     }
 
