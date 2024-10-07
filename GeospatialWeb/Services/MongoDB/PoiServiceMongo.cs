@@ -4,17 +4,16 @@ using MongoDB.Driver;
 using MongoDB.Driver.GeoJsonObjectModel;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace GeospatialWeb.Services.MongoDB;
 
-public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
+public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 {
     private const string _databaseName = "PlayingWith_Geospatial";
 
     private IMongoDatabase _database => _mongoClient.GetDatabase(_databaseName);
 
-    public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
         string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
@@ -45,7 +44,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
         }
     }
 
-    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
+    public override async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         var point = GeoJsonUtils.Point(longitude, latitude);
 
@@ -57,7 +56,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task DatabaseSeed(CancellationToken ct = default)
+    public override async Task DatabaseSeed(CancellationToken ct = default)
     {
         using IAsyncCursor<string> asyncCursor = await _mongoClient.ListDatabaseNamesAsync(ct);
 
@@ -85,11 +84,9 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
 
     private static async Task databaseSeed_Country(IMongoCollection<Country> collection, string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
+        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
 
-        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
-
-        var geoFence_Coordinates = seedRecords!.Select(c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat)).ToArray();
+        var geoFence_Coordinates = seedRecords.Select(c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat)).ToArray();
 
         var country = new Country
         {
@@ -103,19 +100,15 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : IPoiService
 
     private static async Task databaseSeed_POIs(IMongoCollection<PoiData> collection, string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Poi.json"));
-
-        var asyncEnum = JsonSerializer.DeserializeAsyncEnumerable<PoiSeedRecord?>(fileStream, cancellationToken: ct);
-
         List<PoiData> pois = [];
 
-        await foreach (PoiSeedRecord? poiSeedRecord in asyncEnum)
+        await foreach (PoiSeedRecord poiSeedRecord in getPoiSeedRecords(countryName, ct))
         {
             var poiData = new PoiData
             {
                 Id          = Guid.NewGuid(),
                 CountryName = countryName,
-                Category    = poiSeedRecord!.Category,
+                Category    = poiSeedRecord.Category,
                 Name        = poiSeedRecord.Name,
                 Location    = GeoJsonUtils.Point(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };

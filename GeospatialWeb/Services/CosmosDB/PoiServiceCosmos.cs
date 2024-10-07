@@ -4,17 +4,16 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Azure.Cosmos.Spatial;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace GeospatialWeb.Services.CosmosDB;
 
-public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
+public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBase
 {
     private const string _databaseName = "PlayingWith_Geospatial";
 
     private Database _database => _cosmosClient.GetDatabase(_databaseName);
 
-    public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
         string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
@@ -49,7 +48,7 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
         }
     }
 
-    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
+    public override async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         Container container = _database.GetContainer(Country.ContainerId);
 
@@ -71,7 +70,7 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
         return null;
     }
 
-    public async Task DatabaseSeed(CancellationToken ct = default)
+    public override async Task DatabaseSeed(CancellationToken ct = default)
     {
         DatabaseResponse response = await _cosmosClient.CreateDatabaseIfNotExistsAsync(_databaseName, cancellationToken: ct);
 
@@ -89,15 +88,9 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
 
     private static async Task databaseSeed_Country(Database database, string countryName, CancellationToken ct = default)
     {
-        var properties = createContainerProperties(Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);
+        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
 
-        Container container = await database.CreateContainerIfNotExistsAsync(properties, cancellationToken: ct);
-
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
-
-        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
-
-        List<Position> geoFencePoints = seedRecords!.Select(c => new Position(c.Lng, c.Lat)).ToList();
+        List<Position> geoFencePoints = seedRecords.Select(c => new Position(c.Lng, c.Lat)).ToList();
 
         var country = new Country
         {
@@ -105,6 +98,10 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
             Name     = countryName,
             GeoFence = new Polygon(geoFencePoints)
         };
+
+        var properties = createContainerProperties(Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);
+
+        Container container = await database.CreateContainerIfNotExistsAsync(properties, cancellationToken: ct);
 
         await container.CreateItemAsync(country, cancellationToken: ct);
     }
@@ -117,17 +114,13 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : IPoiService
 
         TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(countryName));
 
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Poi.json"));
-
-        var asyncEnum = JsonSerializer.DeserializeAsyncEnumerable<PoiSeedRecord?>(fileStream, cancellationToken: ct);
-
-        await foreach (PoiSeedRecord? poiSeedRecord in asyncEnum)
+        await foreach (PoiSeedRecord poiSeedRecord in getPoiSeedRecords(countryName, ct))
         {
             var poiData = new PoiData
             {
                 Id          = Guid.NewGuid(),
                 CountryName = countryName,
-                Category    = poiSeedRecord!.Category,
+                Category    = poiSeedRecord.Category,
                 Name        = poiSeedRecord.Name,
                 Location    = new Point(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };

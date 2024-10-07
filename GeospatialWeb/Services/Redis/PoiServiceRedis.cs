@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace GeospatialWeb.Services.Redis;
 
-public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexer) : IPoiService
+public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexer) : PoiServiceBase
 {
     private const int _dbNumber = 0;
 
@@ -14,7 +14,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     private LoadedLuaScript? _loadedLuaScript;
 
-    public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
         string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
@@ -47,7 +47,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
         }
     }
 
-    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
+    public override async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         var scriptParams = new
         {
@@ -61,7 +61,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
         return result.ToString().Replace($"{Country.GeoFencePolygonKey}:", string.Empty);
     }
 
-    public async Task DatabaseSeed(CancellationToken ct = default)
+    public override async Task DatabaseSeed(CancellationToken ct = default)
     {
         _loadedLuaScript = await inicializeRayCastingLuaScript();
 
@@ -83,19 +83,15 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     private async Task databaseSeed_Country(string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
+        CountrySeedRecord[]? seedRecords = await getCountrySeedRecords(countryName, ct);
 
-        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
-
-        var geoFence_Coordinates = seedRecords!.Select(c => new GeoLocation(c.Lng, c.Lat)).ToList();
-
-        var geoFence = new GeoPolygon(geoFence_Coordinates);
+        var geoFence_Coordinates = seedRecords.Select(c => new GeoLocation(c.Lng, c.Lat)).ToList();
 
         var country = new Country
         {
             Id       = Guid.NewGuid(),
             Name     = countryName,
-            GeoFence = geoFence
+            GeoFence = new GeoPolygon(geoFence_Coordinates)
         };
 
         string countryJson = JsonSerializer.Serialize(country, CountrySerializationContext.Default.Country);
@@ -107,20 +103,16 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     private async Task databaseSeed_POIs(string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Poi.json"));
-
-        var asyncEnum = JsonSerializer.DeserializeAsyncEnumerable<PoiSeedRecord?>(fileStream, cancellationToken: ct);
-
         IBatch batch = _database.CreateBatch();
 
         List<Task> tasks = [];
 
-        await foreach (PoiSeedRecord? poiSeedRecord in asyncEnum)
+        await foreach (PoiSeedRecord poiSeedRecord in getPoiSeedRecords(countryName, ct))
         {
             var poiData = new PoiData
             {
                 Id       = Guid.NewGuid(),
-                Category = poiSeedRecord!.Category,
+                Category = poiSeedRecord.Category,
                 Name     = poiSeedRecord.Name,
                 Location = new GeoLocation(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };

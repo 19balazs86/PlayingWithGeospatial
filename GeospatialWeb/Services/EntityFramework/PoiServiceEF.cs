@@ -3,15 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace GeospatialWeb.Services.EntityFramework;
 
-public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
+public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBase
 {
     private static readonly GeometryFactory _geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(ApplicationDbContext.SRID);
 
-    public async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
     {
         string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
 
@@ -37,7 +36,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
         }
     }
 
-    public async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
+    public override async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
         // This does not work: ST_Contains does not work with geography type
         // return _dbContext.Countries.Where(c => c.GeoFence.Contains(point)).FirstOrDefaultAsync(ct);
@@ -54,7 +53,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
         return await _dbContext.Database.SqlQuery<string?>(formattedSql).FirstOrDefaultAsync(ct);
     }
 
-    public async Task DatabaseSeed(CancellationToken ct = default)
+    public override async Task DatabaseSeed(CancellationToken ct = default)
     {
         await _dbContext.Database.EnsureCreatedAsync(ct);
 
@@ -76,11 +75,9 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
 
     private async Task<Guid> databaseSeed_Country(string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
+        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
 
-        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
-
-        Coordinate[] coordinates = seedRecords!.Select(c => new Coordinate(c.Lng, c.Lat)).ToArray();
+        Coordinate[] coordinates = seedRecords.Select(c => new Coordinate(c.Lng, c.Lat)).ToArray();
 
         var country = new Country
         {
@@ -98,17 +95,13 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : IPoiService
 
     private async Task databaseSeed_POIs(Guid countryId, string countryName, CancellationToken ct = default)
     {
-        using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Poi.json"));
-
-        var asyncEnum = JsonSerializer.DeserializeAsyncEnumerable<PoiSeedRecord?>(fileStream, cancellationToken: ct);
-
-        await foreach (PoiSeedRecord? poiSeedRecord in asyncEnum)
+        await foreach (PoiSeedRecord poiSeedRecord in getPoiSeedRecords(countryName, ct))
         {
             var poiData = new PoiData
             {
                 Id        = Guid.NewGuid(),
                 CountryId = countryId,
-                Category  = poiSeedRecord!.Category,
+                Category  = poiSeedRecord.Category,
                 Name      = poiSeedRecord.Name,
                 Location  = _geometryFactory.CreatePoint(poiSeedRecord.Lng, poiSeedRecord.Lat)
             };
