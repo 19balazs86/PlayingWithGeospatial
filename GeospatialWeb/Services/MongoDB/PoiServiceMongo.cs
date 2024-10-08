@@ -13,20 +13,51 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
     private IMongoDatabase _database => _mongoClient.GetDatabase(_databaseName);
 
-    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
+        var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
+
+        var nearFilter  = Builders<PoiData>.Filter.Near(p  => p.Location, point, poiRequest.Distance);
+
+        return findPois(poiRequest.Lng, poiRequest.Lat, nearFilter, ct);
+    }
+
+    public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
+    {
+        GeoJson2DGeographicCoordinates[] coordinates =
+        [
+            new GeoJson2DGeographicCoordinates(poiRequest.NWLng, poiRequest.NWLat),
+            new GeoJson2DGeographicCoordinates(poiRequest.SWLng, poiRequest.SWLat),
+            new GeoJson2DGeographicCoordinates(poiRequest.SELng, poiRequest.SELat),
+            new GeoJson2DGeographicCoordinates(poiRequest.NELng, poiRequest.NELat),
+            new GeoJson2DGeographicCoordinates(poiRequest.NWLng, poiRequest.NWLat)
+        ];
+
+        var polygon = GeoJson.Polygon(GeoJson.PolygonCoordinates((coordinates)));
+
+        var withinFilter = Builders<PoiData>.Filter.GeoWithin(p => p.Location, polygon);
+        // var withinFilter = Builders<PoiData>.Filter.GeoWithinBox(p => p.Location, poiRequest.SWLng, poiRequest.SWLat, poiRequest.NELng, poiRequest.NELat);
+        // var withinFilter = Builders<PoiData>.Filter.GeoWithinCenter(p => p.Location, x, y, radius);
+        // var withinFilter = Builders<PoiData>.Filter.GeoWithinPolygon(p => p.Location, points);
+
+        return findPois(poiRequest.CenterLng, poiRequest.CenterLat, withinFilter, ct);
+    }
+
+    private async IAsyncEnumerable<PoiResponse> findPois(
+        double centerLng,
+        double centerLat,
+        FilterDefinition<PoiData> poiFilter,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        string? countryName = await FindCountryName(centerLng, centerLat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
             yield break;
         }
 
-        var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
-
         var whereFilter = Builders<PoiData>.Filter.Where(p => p.CountryName == countryName);
-        var nearFilter  = Builders<PoiData>.Filter.Near(p  => p.Location, point, poiRequest.Distance);
-        var andFilter   = Builders<PoiData>.Filter.And(whereFilter, nearFilter);
+        var andFilter   = Builders<PoiData>.Filter.And(whereFilter, poiFilter);
 
         IAsyncCursor<PoiData> asyncCursor = await _database.GetCollection<PoiData>(PoiData.CollectionName)
             .FindAsync(andFilter, cancellationToken: ct);
@@ -37,10 +68,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
             {
                 (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-                // It is possible to return both the PoiData entity and the distance
-                // But the query is more complex than simply using Builder.Filter
-                // You can find it at the end of this file
-                double distance = GeoUtils.HaversineDistance(poiLng, poiLat, poiRequest.Lng, poiRequest.Lat);
+                double distance = GeoUtils.HaversineDistance(poiLng, poiLat, centerLng, centerLat);
 
                 yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
             }
