@@ -1,7 +1,9 @@
-﻿using GeospatialWeb.Services.EntityFramework.Models;
+﻿using GeospatialWeb.Geography;
+using GeospatialWeb.Services.EntityFramework.Models;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace GeospatialWeb.Services.EntityFramework;
@@ -10,30 +12,56 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 {
     private static readonly GeometryFactory _geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(ApplicationDbContext.SRID);
 
-    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
+        Point point = _geometryFactory.CreatePoint(poiRequest.Lng, poiRequest.Lat);
+
+        return findPois(poiRequest.Lng, poiRequest.Lat, poi => poi.Location.Distance(point) <= poiRequest.Distance, ct);
+    }
+
+    public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
+    {
+        Coordinate[] coordinates =
+        [
+            new Coordinate(poiRequest.NWLng, poiRequest.NWLat),
+            new Coordinate(poiRequest.SWLng, poiRequest.SWLat),
+            new Coordinate(poiRequest.SELng, poiRequest.SELat),
+            new Coordinate(poiRequest.NELng, poiRequest.NELat),
+            new Coordinate(poiRequest.NWLng, poiRequest.NWLat)
+        ];
+
+        var polygon = _geometryFactory.CreatePolygon(coordinates);
+
+        return findPois(poiRequest.CenterLng, poiRequest.CenterLat, poi => poi.Location.CoveredBy(polygon), ct);
+    }
+
+    private async IAsyncEnumerable<PoiResponse> findPois(
+        double centerLng,
+        double centerLat,
+        Expression<Func<PoiData, bool>> wherePredicate,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        string? countryName = await FindCountryName(centerLng, centerLat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
             yield break;
         }
 
-        Point point = _geometryFactory.CreatePoint(poiRequest.Lng, poiRequest.Lat);
-
         Guid countryId = Guid.Parse(countryName);
 
-        // The distance is calculated twice, even for an entity with the Distance field populated using Location.Distance(point) and a filter applied to the Distance field
-        var asyncEnum = _dbContext.POIs
-            .Where(poi => poi.CountryId == countryId && poi.Location.Distance(point) <= poiRequest.Distance)
-            .Select(poi => new { Entity = poi, Distance = poi.Location.Distance(point) })
+        IAsyncEnumerable<PoiData> asyncEnum = _dbContext.POIs
+            .Where(poi => poi.CountryId == countryId)
+            .Where(wherePredicate)
             .AsAsyncEnumerable();
 
-        await foreach (var item in asyncEnum)
+        await foreach (PoiData poi in asyncEnum.WithCancellation(ct))
         {
-            PoiData poi = item.Entity;
+            (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, Lng: poi.Location.X, Lat: poi.Location.Y, Distance: item.Distance);
+            double distance = GeoUtils.HaversineDistance(poiLng, poiLat, centerLng, centerLat);
+
+            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
         }
     }
 
@@ -132,5 +160,10 @@ file static class GeometryFactoryExtension
     public static Polygon CreatePolygon(this GeometryFactory factory, Coordinate[] coordinates)
     {
         return factory.CreatePolygon(factory.CreateLinearRing(coordinates));
+    }
+
+    public static (double latitude, double longitude) GetLatLng(this Point point)
+    {
+        return (point.Y, point.X);
     }
 }
