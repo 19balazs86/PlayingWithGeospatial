@@ -5,6 +5,11 @@
 - I used LeafletJS with OpenStreetMap
 - For database solutions, you can choose from various implementations in [Program.cs](GeospatialWeb/Program.cs)
   - Azure Cosmos | Mongo | Redis | Postgres with EF
+- You can find the following geospatial queries
+  - Find POIs by distance
+  - Find POIs within screen/map bounds, which determines whether a stored location falls inside a given polygon (screen)
+  - Find countries based on the center of the map, determining whether a given point (center) lies within a polygon (country boundaries)
+
 
 ## Resources
 
