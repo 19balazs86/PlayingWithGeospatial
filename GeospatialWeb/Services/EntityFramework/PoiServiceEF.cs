@@ -21,14 +21,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 
     public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
     {
-        Coordinate[] coordinates =
-        [
-            new Coordinate(poiRequest.NWLng, poiRequest.NWLat),
-            new Coordinate(poiRequest.SWLng, poiRequest.SWLat),
-            new Coordinate(poiRequest.SELng, poiRequest.SELat),
-            new Coordinate(poiRequest.NELng, poiRequest.NELat),
-            new Coordinate(poiRequest.NWLng, poiRequest.NWLat)
-        ];
+        Coordinate[] coordinates = toPolygonCoordinates(poiRequest, coordinate => new Coordinate(coordinate.Lng, coordinate.Lat));
 
         var polygon = _geometryFactory.CreatePolygon(coordinates);
 

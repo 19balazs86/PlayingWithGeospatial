@@ -24,14 +24,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
     public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
     {
-        GeoJson2DGeographicCoordinates[] coordinates =
-        [
-            new GeoJson2DGeographicCoordinates(poiRequest.NWLng, poiRequest.NWLat),
-            new GeoJson2DGeographicCoordinates(poiRequest.SWLng, poiRequest.SWLat),
-            new GeoJson2DGeographicCoordinates(poiRequest.SELng, poiRequest.SELat),
-            new GeoJson2DGeographicCoordinates(poiRequest.NELng, poiRequest.NELat),
-            new GeoJson2DGeographicCoordinates(poiRequest.NWLng, poiRequest.NWLat)
-        ];
+        var coordinates = toPolygonCoordinates(poiRequest, c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat));
 
         var polygon = GeoJson.Polygon(GeoJson.PolygonCoordinates((coordinates)));
 

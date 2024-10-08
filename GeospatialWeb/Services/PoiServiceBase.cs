@@ -31,4 +31,21 @@ public abstract class PoiServiceBase : IPoiService
             yield return poiSeedRecord!;
         }
     }
+
+    protected static T[] toPolygonCoordinates<T>(PoiRequestWithin poiRequest, Func<(double Lng, double Lat), T> transform)
+    {
+        return toPolygonCoordinates(poiRequest).Select(coordinate => transform(coordinate)).ToArray();
+    }
+
+    private static (double Lng, double Lat)[] toPolygonCoordinates(PoiRequestWithin poiRequest)
+    {
+        return
+        [
+            (poiRequest.NWLng, poiRequest.NWLat),
+            (poiRequest.SWLng, poiRequest.SWLat),
+            (poiRequest.SELng, poiRequest.SELat),
+            (poiRequest.NELng, poiRequest.NELat),
+            (poiRequest.NWLng, poiRequest.NWLat)
+        ];
+    }
 }

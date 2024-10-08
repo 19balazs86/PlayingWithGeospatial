@@ -24,14 +24,7 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
 
     public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
     {
-        Position[] positions =
-        [
-            new Position(poiRequest.NWLng, poiRequest.NWLat),
-            new Position(poiRequest.SWLng, poiRequest.SWLat),
-            new Position(poiRequest.SELng, poiRequest.SELat),
-            new Position(poiRequest.NELng, poiRequest.NELat),
-            new Position(poiRequest.NWLng, poiRequest.NWLat)
-        ];
+        Position[] positions = toPolygonCoordinates(poiRequest, coordinate => new Position(coordinate.Lng, coordinate.Lat));
 
         var polygon = new Polygon(positions);
 
