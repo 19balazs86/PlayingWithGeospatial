@@ -1,5 +1,6 @@
 ﻿using GeospatialWeb.Geography;
 using GeospatialWeb.Services.Redis.Models;
+using MongoDB.Driver;
 using StackExchange.Redis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -14,9 +15,34 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     private LoadedLuaScript? _loadedLuaScript;
 
-    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
+        Func<string, Task<GeoRadiusResult[]>> poisFinderFunc = geoPoisKey => _database.GeoRadiusAsync(
+            geoPoisKey, poiRequest.Lng, poiRequest.Lat, poiRequest.Distance, GeoUnit.Meters, options: GeoRadiusOptions.WithDistance);
+
+        return findPois(poiRequest.Lng, poiRequest.Lat, poisFinderFunc, ct);
+    }
+
+    public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
+    {
+        double height = GeoUtils.HaversineDistance(poiRequest.NWLng, poiRequest.NWLat, poiRequest.SWLng, poiRequest.SWLat);
+        double width  = GeoUtils.HaversineDistance(poiRequest.NWLng, poiRequest.NWLat, poiRequest.NELng, poiRequest.NELat);
+
+        var geoSearchBox = new GeoSearchBox(height, width, GeoUnit.Meters);
+
+        Func<string, Task<GeoRadiusResult[]>> poisFinderFunc = geoPoisKey => _database.GeoSearchAsync(
+            geoPoisKey, poiRequest.CenterLng, poiRequest.CenterLat, geoSearchBox, options: GeoRadiusOptions.WithDistance);
+
+        return findPois(poiRequest.CenterLng, poiRequest.CenterLat, poisFinderFunc, ct);
+    }
+
+    public async IAsyncEnumerable<PoiResponse> findPois(
+        double centerLng,
+        double centerLat,
+        Func<string, Task<GeoRadiusResult[]>> poisFinderFunc,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        string? countryName = await FindCountryName(centerLng, centerLat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -25,8 +51,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
         string geoPoisKey = PoiData.GetGeoIdKey(countryName);
 
-        GeoRadiusResult[] radiusResults = await _database.GeoRadiusAsync(
-            geoPoisKey, poiRequest.Lng, poiRequest.Lat, poiRequest.Distance, GeoUnit.Meters, options: GeoRadiusOptions.WithDistance);
+        GeoRadiusResult[] radiusResults = await poisFinderFunc(geoPoisKey);
 
         var tasks = new Task<RedisValue>[radiusResults.Length];
 
@@ -52,11 +77,13 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
                 throw new NullReferenceException($"Poi({PoiData.GetIdKey(countryName, radiusResults[i].Member!)}) does not exists");
             }
 
-            PoiData? poiData = JsonSerializer.Deserialize<PoiData?>(poiJson);
+            PoiData? poi = JsonSerializer.Deserialize<PoiData?>(poiJson);
+
+            (double poiLng, double poiLat) = poi!.Location;
 
             // GeoPosition? geoPosition = result.Position.Value; // GeoRadiusOptions.WithCoordinates
 
-            yield return new PoiResponse(poiData!.Id, poiData.Name, poiData.Category, poiData.Location.Lng, poiData.Location.Lat, radiusResults[i].Distance.GetValueOrDefault(-1));
+            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, radiusResults[i].Distance.GetValueOrDefault(-1));
         }
     }
 
