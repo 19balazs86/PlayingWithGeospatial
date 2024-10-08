@@ -23,6 +23,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 
         Guid countryId = Guid.Parse(countryName);
 
+        // The distance is calculated twice, even for an entity with the Distance field populated using Location.Distance(point) and a filter applied to the Distance field
         var asyncEnum = _dbContext.POIs
             .Where(poi => poi.CountryId == countryId && poi.Location.Distance(point) <= poiRequest.Distance)
             .Select(poi => new { Entity = poi, Distance = poi.Location.Distance(point) })
