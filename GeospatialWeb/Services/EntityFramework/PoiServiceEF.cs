@@ -19,7 +19,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
             yield break;
         }
 
-        var point = _geometryFactory.CreatePoint(poiRequest.Lng, poiRequest.Lat);
+        Point point = _geometryFactory.CreatePoint(poiRequest.Lng, poiRequest.Lat);
 
         Guid countryId = Guid.Parse(countryName);
 
@@ -38,19 +38,27 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 
     public override async Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default)
     {
+        Point point = _geometryFactory.CreatePoint(longitude, latitude);
+
+        return await _dbContext.Countries
+            .Where(c => c.GeoFence.Covers(point))
+            .Select(c => c.Id.ToString())
+            .FirstOrDefaultAsync(ct);
+
         // This does not work: ST_Contains does not work with geography type
         // return _dbContext.Countries.Where(c => c.GeoFence.Contains(point)).FirstOrDefaultAsync(ct);
 
-        string sql =
-            $$"""
-            SELECT "Id"::text AS "Value"
-            FROM "Countries"
-            WHERE ST_Contains("GeoFence"::geometry, ST_SetSRID(ST_MakePoint({0}, {1}), {{ApplicationDbContext.SRID}}))
-            """;
+        // It works by casting the GeoFence to a geometry
+        //string sql =
+        //    $$"""
+        //    SELECT "Id"::text AS "Value"
+        //    FROM "Countries"
+        //    WHERE ST_Contains("GeoFence"::geometry, ST_SetSRID(ST_MakePoint({0}, {1}), {{ApplicationDbContext.SRID}}))
+        //    """;
 
-        FormattableString formattedSql = FormattableStringFactory.Create(sql, longitude, latitude);
+        //FormattableString formattedSql = FormattableStringFactory.Create(sql, longitude, latitude);
 
-        return await _dbContext.Database.SqlQuery<string?>(formattedSql).FirstOrDefaultAsync(ct);
+        //return await _dbContext.Database.SqlQuery<string?>(formattedSql).FirstOrDefaultAsync(ct);
     }
 
     public override async Task DatabaseSeed(CancellationToken ct = default)

@@ -50,8 +50,8 @@
 ## Comparison summary
 - **Redis**: Fast for in-memory operations but could be limited by memory for large datasets. Complex geospatial queries and Polygon types are not supported. Better for real-time applications with smaller datasets.
 - **Cosmos**: Highly scalable and efficient for large, distributed datasets, complex geospatial queries.
-- **Mongo**: Good balance of performance and scalability, complex geospatial queries.
-- **Postgres**: Handles complex geospatial queries with robust performance. I had to use a raw SQL query, so working with geo types in Cosmos and Mongo is more convenient.
+- **Mongo**: Good performance and scalability, complex geospatial queries. The names for geo types are a bit long and a bit difficult to create, but extension methods can help.
+- **Postgres**: Good performance, handles complex geospatial queries with EF, making it easy to create and work with geo types.
 
 ## Screen
 
