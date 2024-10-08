@@ -18,7 +18,7 @@ public static class GeoUtils
 
         double c = 2 * Math.Asin(Math.Sqrt(a));
 
-        return R * c;
+        return Math.Round(R * c, 4);
     }
 
     // Ray-casting algorithm
