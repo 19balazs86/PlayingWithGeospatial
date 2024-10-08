@@ -25,7 +25,7 @@
         {
             clearTimeout(timer);
 
-            timer = setTimeout(() => searchPoi(), 1000);
+            timer = setTimeout(() => searchPoisWithin(), 1000);
         }
     }
 
@@ -77,15 +77,50 @@
         map.setView(location);
     }
 
-    async function searchPoi()
+    async function searchPoisDistance()
     {
         const center = map.getCenter();
         const bounds = map.getBounds();
 
         const distance = (bounds.getNorthWest().distanceTo(bounds.getSouthEast())) / 2;
 
-        let apiUrl = `/api/poi?lat=${center.lat}&lng=${center.lng}&distance=${distance}`;
+        let apiUrl = `/api/pois/distance?lat=${center.lat}&lng=${center.lng}&distance=${distance}`;
 
+        await fetchPois(apiUrl);
+    }
+
+    async function searchPoisWithin()
+    {
+        // Center
+        const center = map.getCenter();
+        const centerLng = center.lng;
+        const centerLat = center.lat;
+
+        // Bounds
+        const bounds = map.getBounds();
+        const nw = bounds.getNorthWest();
+        const sw = bounds.getSouthWest();
+        const se = bounds.getSouthEast();
+        const ne = bounds.getNorthEast();
+
+        // Coordinates
+        const nwLng = nw.lng;
+        const nwLat = nw.lat;
+        const swLng = sw.lng;
+        const swLat = sw.lat;
+        const seLng = se.lng;
+        const seLat = se.lat;
+        const neLng = ne.lng;
+        const neLat = ne.lat;
+
+        // Api URL + Query string
+        let apiUrl = `/api/pois/within?centerLng=${centerLng}&centerLat=${centerLat}&nwLng=${nwLng}&nwLat=${nwLat}&swLng=${swLng}&swLat=${swLat}&seLng=${seLng}&seLat=${seLat}&neLng=${neLng}&neLat=${neLat}`;
+
+        await fetchPois(apiUrl);
+    }
+
+    async function fetchPois(apiUrl)
+    {
         try
         {
             const response = await fetch(apiUrl);
@@ -98,7 +133,8 @@
             const poiArray = await response.json();
 
             refreshPoiMarkersLayer(poiArray);
-        } catch (error) {
+        } catch (error)
+        {
             console.error('Error fetching data:', error);
         }
     }
@@ -133,6 +169,7 @@
     // Exposed functions
     return {
         onClick_FindMe: findMe,
-        onClick_SearchPoi: searchPoi
+        onClick_SearchPoisDistance: searchPoisDistance,
+        onClick_SearchPoisWithin: searchPoisWithin
     };
 })();

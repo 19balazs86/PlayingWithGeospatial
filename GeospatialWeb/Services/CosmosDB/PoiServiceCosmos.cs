@@ -1,7 +1,9 @@
-﻿using GeospatialWeb.Services.CosmosDB.Models;
+﻿using GeospatialWeb.Geography;
+using GeospatialWeb.Services.CosmosDB.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Azure.Cosmos.Spatial;
+using System.Linq.Expressions;
 using System.Net;
 using System.Runtime.CompilerServices;
 
@@ -13,9 +15,36 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
 
     private Database _database => _cosmosClient.GetDatabase(_databaseName);
 
-    public override async IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
     {
-        string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
+        var point = new Point(poiRequest.Lng, poiRequest.Lat);
+
+        return findPois(poiRequest.Lng, poiRequest.Lat, poi => poi.Location.Distance(point) <= poiRequest.Distance, ct);
+    }
+
+    public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
+    {
+        Position[] positions =
+        [
+            new Position(poiRequest.NWLng, poiRequest.NWLat),
+            new Position(poiRequest.SWLng, poiRequest.SWLat),
+            new Position(poiRequest.SELng, poiRequest.SELat),
+            new Position(poiRequest.NELng, poiRequest.NELat),
+            new Position(poiRequest.NWLng, poiRequest.NWLat)
+        ];
+
+        var polygon = new Polygon(positions);
+
+        return findPois(poiRequest.CenterLng, poiRequest.CenterLat, poi => poi.Location.Within(polygon), ct);
+    }
+
+    private async IAsyncEnumerable<PoiResponse> findPois(
+        double centerLng,
+        double centerLat,
+        Expression<Func<PoiData, bool>> wherePredicate,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        string? countryName = await FindCountryName(centerLng, centerLat, ct);
 
         if (string.IsNullOrEmpty(countryName))
         {
@@ -24,26 +53,22 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
 
         var requestOptions = new QueryRequestOptions { PartitionKey = new PartitionKey(countryName) };
 
-        var point = new Point(poiRequest.Lng, poiRequest.Lat);
-
         Container container = _database.GetContainer(PoiData.ContainerId);
 
         using var feedIterator = container
             .GetItemLinqQueryable<PoiData>(requestOptions: requestOptions)
-            .Where(poi =>   poi.Location.Distance(point) <= poiRequest.Distance)
-            // .OrderBy(poi => poi.Location.Distance(point)) // This does not work
-            // Lat and Lng do not get populated
-            // .Select(poi => new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Latitude, poi.Location.Position.Longitude)
-            .Select(poi => new { Entity = poi, Distance = poi.Location.Distance(point) })
+            .Where(wherePredicate)
             .ToFeedIterator();
 
         while (feedIterator.HasMoreResults)
         {
-            foreach (var item in await feedIterator.ReadNextAsync(ct))
+            foreach (PoiData poi in await feedIterator.ReadNextAsync(ct))
             {
-                PoiData poi = item.Entity;
+                (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
-                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poi.Location.Position.Longitude, poi.Location.Position.Latitude, item.Distance);
+                double distance = GeoUtils.HaversineDistance(poiLng, poiLat, centerLng, centerLat);
+
+                yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
             }
         }
     }
@@ -147,5 +172,13 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
             PartitionKeyPath = partitionKeyPath,
             IndexingPolicy   = indexingPolicy
         };
+    }
+}
+
+file static class GeometryUtils
+{
+    public static (double latitude, double longitude) GetLatLng(this Point point)
+    {
+        return (point.Position.Latitude, point.Position.Longitude);
     }
 }
