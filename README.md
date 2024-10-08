@@ -12,7 +12,10 @@
 
 - [Leaflet.js](https://leafletjs.com)
 - [LeafletForBlazor](https://github.com/ichim/LeafletForBlazor-NuGet) 👤*Laurentiu Ichim*
-- [Routing machine](https://www.liedman.net/leaflet-routing-machine)
+- Extensions
+  - [Routing machine](https://www.liedman.net/leaflet-routing-machine)
+  - [Overpass API](https://overpass-turbo.eu) 📓*Retrieving data (POIs) from OpenStreetMap*
+  - [Turf.js](https://turfjs.org) - *Advanced geospatial analysis*
 
 #### 🗃️ `Cosmos`
 
@@ -22,8 +25,9 @@
 
 #### 🗃️ `Mongo`
 
-- [Search Geospatially](https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/geo)
-- [Geospatial indexes](https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/indexes/#geospatial-indexes)
+- [Search Geospatially](https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/geo) 📓*C#*
+- [Geospatial indexes](https://www.mongodb.com/docs/drivers/csharp/current/fundamentals/indexes/#geospatial-indexes) 📓*C#*
+- [Geospatial queries](https://www.mongodb.com/docs/manual/geospatial-queries) 📓*Manual - Mongo specific queries*
 - [Playing with MongoDB](https://github.com/19balazs86/PlayingWithMongoDB) 👤*My repository*
 
 #### 🗃️ `Redis`
@@ -40,7 +44,6 @@
 #### ✨ `Miscellaneous`
 
 - [OpenStreetMap](https://www.openstreetmap.org)
-- [Turf.js](https://turfjs.org) - *Advanced geospatial analysis*
 - [GeoJSON.io](https://geojson.io)
 - [geoBoundaries](https://www.geoboundaries.org/index.html)
 
