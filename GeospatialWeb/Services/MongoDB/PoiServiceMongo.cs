@@ -37,6 +37,9 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
             {
                 (double poiLat, double poiLng) = poi.Location.GetLatLng();
 
+                // It is possible to return both the PoiData entity and the distance
+                // But the query is more complex than simply using Builder.Filter
+                // You can find it at the end of this file
                 double distance = GeoUtils.HaversineDistance(poiLng, poiLat, poiRequest.Lng, poiRequest.Lat);
 
                 yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
@@ -156,3 +159,58 @@ file static class GeoJsonUtils
         return (point.Coordinates.Latitude, point.Coordinates.Longitude);
     }
 }
+
+//public async IAsyncEnumerable<PoiResponse> FindPOI_using_BsonDocument(PoiRequest poiRequest, [EnumeratorCancellation] CancellationToken ct = default)
+//{
+//    string? countryName = await FindCountryName(poiRequest.Lng, poiRequest.Lat, ct);
+
+//    if (string.IsNullOrEmpty(countryName))
+//    {
+//        yield break;
+//    }
+
+// No need to define the Location field for the $geoNear filter, as Mongo uses the indexed field by default
+//    var geoNearStage = new BsonDocument
+//    {
+//        { "$geoNear", new BsonDocument
+//            {
+//                { "near", new BsonDocument
+//                    {
+//                        { "type", "Point" },
+//                        { "coordinates", new BsonArray { poiRequest.Lng, poiRequest.Lat } }
+//                    }
+//                },
+//                { "distanceField", "distance" },
+//                { "maxDistance", poiRequest.Distance },
+//                { "query", new BsonDocument
+//                    {
+//                        { "CountryName", countryName }
+//                    }
+//                },
+//                { "spherical", true }
+//            }
+//        }
+//    };
+
+//    var pipeline = new[] { geoNearStage };
+
+//    IAsyncCursor<BsonDocument> asyncCursor = await _database
+//        .GetCollection<BsonDocument>(PoiData.CollectionName)
+//        .AggregateAsync<BsonDocument>(pipeline, cancellationToken: ct);
+
+//    while (await asyncCursor.MoveNextAsync(ct))
+//    {
+//        foreach (BsonDocument document in asyncCursor.Current)
+//        {
+//            double distance = document["distance"].ToDouble();
+
+//            document.Remove("distance"); // Need to remove it, because error: Element 'distance' does not match any field or property of class PoiData
+
+//            PoiData poi = BsonSerializer.Deserialize<PoiData>(document);
+
+//            (double poiLat, double poiLng) = poi.Location.GetLatLng();
+
+//            yield return new PoiResponse(poi.Id, poi.Name, poi.Category, poiLng, poiLat, distance);
+//        }
+//    }
+//}
