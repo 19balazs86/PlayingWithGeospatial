@@ -24,12 +24,12 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
         var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
 
-        var nearFilter     = Builders<PoiData>.Filter.Near(p => p.Location, point, poiRequest.Distance);
-        var whereFilter    = Builders<PoiData>.Filter.Where(p => p.CountryName == countryName);
-        var combinedFilter = Builders<PoiData>.Filter.And(nearFilter, whereFilter);
+        var whereFilter = Builders<PoiData>.Filter.Where(p => p.CountryName == countryName);
+        var nearFilter  = Builders<PoiData>.Filter.Near(p  => p.Location, point, poiRequest.Distance);
+        var andFilter   = Builders<PoiData>.Filter.And(whereFilter, nearFilter);
 
         IAsyncCursor<PoiData> asyncCursor = await _database.GetCollection<PoiData>(PoiData.CollectionName)
-            .FindAsync(combinedFilter, cancellationToken: ct);
+            .FindAsync(andFilter, cancellationToken: ct);
 
         while (await asyncCursor.MoveNextAsync(ct))
         {
