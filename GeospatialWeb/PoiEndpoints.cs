@@ -18,7 +18,7 @@ public static class PoiEndpoints
 
     private static IAsyncEnumerable<PoiResponse> handle_GetPoisDistance([AsParameters] PoiRequest poiRequest, IPoiService poiService, CancellationToken ct)
     {
-        return poiService.FindPOIs(poiRequest, ct);
+        return poiService.FindPoisDistance(poiRequest, ct);
     }
 
     private static IAsyncEnumerable<PoiResponse> handle_GetPoisWithin([AsParameters] PoiRequestWithin poiRequest, IPoiService poiService, CancellationToken ct)

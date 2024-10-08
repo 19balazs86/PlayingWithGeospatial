@@ -15,7 +15,7 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
 
     private LoadedLuaScript? _loadedLuaScript;
 
-    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default)
     {
         Func<string, Task<GeoRadiusResult[]>> poisFinderFunc = geoPoisKey => _database.GeoRadiusAsync(
             geoPoisKey, poiRequest.Lng, poiRequest.Lat, poiRequest.Distance, GeoUnit.Meters, options: GeoRadiusOptions.WithDistance);

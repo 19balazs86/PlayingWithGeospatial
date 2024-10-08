@@ -7,11 +7,8 @@ public abstract class PoiServiceBase : IPoiService
 {
     public abstract Task DatabaseSeed(CancellationToken ct = default);
     public abstract Task<string?> FindCountryName(double longitude, double latitude, CancellationToken ct = default);
-    public abstract IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default);
-    public virtual IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
+    public abstract IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default);
+    public abstract IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default);
 
     protected static async Task<CountrySeedRecord[]> getCountrySeedRecords(string countryName, CancellationToken ct = default)
     {

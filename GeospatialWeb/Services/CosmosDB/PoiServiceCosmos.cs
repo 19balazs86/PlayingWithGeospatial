@@ -15,7 +15,7 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
 
     private Database _database => _cosmosClient.GetDatabase(_databaseName);
 
-    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default)
     {
         var point = new Point(poiRequest.Lng, poiRequest.Lat);
 

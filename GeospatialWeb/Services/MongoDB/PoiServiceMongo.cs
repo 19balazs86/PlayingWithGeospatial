@@ -13,7 +13,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
     private IMongoDatabase _database => _mongoClient.GetDatabase(_databaseName);
 
-    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default)
     {
         var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
 

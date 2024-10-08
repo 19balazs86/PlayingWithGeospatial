@@ -12,7 +12,7 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 {
     private static readonly GeometryFactory _geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(ApplicationDbContext.SRID);
 
-    public override IAsyncEnumerable<PoiResponse> FindPOIs(PoiRequest poiRequest, CancellationToken ct = default)
+    public override IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default)
     {
         Point point = _geometryFactory.CreatePoint(poiRequest.Lng, poiRequest.Lat);
 
