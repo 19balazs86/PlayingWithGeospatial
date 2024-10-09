@@ -24,7 +24,7 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
     public override IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default)
     {
-        var coordinates = toPolygonCoordinates(poiRequest, c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat));
+        var coordinates = toPolygonCoordinates(poiRequest, c => GeoJson.Geographic(c.Lng, c.Lat));
 
         var polygon = GeoJson.Polygon(GeoJson.PolygonCoordinates((coordinates)));
 
@@ -172,7 +172,7 @@ file static class GeoJsonUtils
 {
     public static GeoJsonPoint<GeoJson2DGeographicCoordinates> Point(double longitude, double latitude)
     {
-        return GeoJson.Point(new GeoJson2DGeographicCoordinates(longitude, latitude));
+        return GeoJson.Point(GeoJson.Geographic(longitude, latitude));
     }
 
     public static (double latitude, double longitude) GetLatLng(this GeoJsonPoint<GeoJson2DGeographicCoordinates> point)
@@ -190,28 +190,20 @@ file static class GeoJsonUtils
 //        yield break;
 //    }
 
-// No need to define the Location field for the $geoNear filter, as Mongo uses the indexed field by default
-//    var geoNearStage = new BsonDocument
+//    //  No need to define the Location field for the $geoNear filter, as Mongo uses the indexed field by default
+//    var geoNearStage = new BsonDocument("$geoNear", new BsonDocument
 //    {
-//        { "$geoNear", new BsonDocument
+//        { "near", new BsonDocument
 //            {
-//                { "near", new BsonDocument
-//                    {
-//                        { "type", "Point" },
-//                        { "coordinates", new BsonArray { poiRequest.Lng, poiRequest.Lat } }
-//                    }
-//                },
-//                { "distanceField", "distance" },
-//                { "maxDistance", poiRequest.Distance },
-//                { "query", new BsonDocument
-//                    {
-//                        { "CountryName", countryName }
-//                    }
-//                },
-//                { "spherical", true }
+//                { "type", "Point" },
+//                { "coordinates", new BsonArray { poiRequest.Lng, poiRequest.Lat } }
 //            }
-//        }
-//    };
+//        },
+//        { "distanceField", "distance" },
+//        { "maxDistance", poiRequest.Distance },
+//        { "spherical", false },
+//        { "query", new BsonDocument("CountryName", countryName) }
+//    });
 
 //    var pipeline = new[] { geoNearStage };
 
