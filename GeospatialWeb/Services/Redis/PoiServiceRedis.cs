@@ -112,26 +112,24 @@ public sealed class PoiServiceRedis(IConnectionMultiplexer _connectionMultiplexe
             return;
         }
 
-        await databaseSeed_Country("France",  ct);
-        await databaseSeed_Country("Spain",   ct);
-        await databaseSeed_Country("Ireland", ct);
+        await databaseSeed_Country("France");
+        await databaseSeed_Country("Spain");
+        await databaseSeed_Country("Ireland");
 
         await databaseSeed_POIs("France",  ct);
         await databaseSeed_POIs("Spain",   ct);
         await databaseSeed_POIs("Ireland", ct);
     }
 
-    private async Task databaseSeed_Country(string countryName, CancellationToken ct = default)
+    private async Task databaseSeed_Country(string countryName)
     {
-        CountrySeedRecord[]? seedRecords = await getCountrySeedRecords(countryName, ct);
-
-        var geoFence_Coordinates = seedRecords.Select(c => new GeoLocation(c.Lng, c.Lat)).ToList();
+        GeoLocation[] geoFence_Points = getGeoFenceCoordinates(countryName, point => new GeoLocation(point.Lng, point.Lat));
 
         var country = new Country
         {
             Id       = Guid.NewGuid(),
             Name     = countryName,
-            GeoFence = new GeoPolygon(geoFence_Coordinates)
+            GeoFence = new GeoPolygon(geoFence_Points)
         };
 
         string countryJson = JsonSerializer.Serialize(country, CountrySerializationContext.Default.Country);

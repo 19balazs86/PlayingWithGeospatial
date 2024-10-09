@@ -10,13 +10,27 @@ public abstract class PoiServiceBase : IPoiService
     public abstract IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default);
     public abstract IAsyncEnumerable<PoiResponse> FindPoisWithin(PoiRequestWithin poiRequest, CancellationToken ct = default);
 
-    protected static async Task<CountrySeedRecord[]> getCountrySeedRecords(string countryName, CancellationToken ct = default)
+    protected static T[] getGeoFenceCoordinates<T>(string countryName, Func<(double Lng, double Lat), T> transform)
     {
         using FileStream fileStream = File.OpenRead(Path.Combine("SeedData", $"Seed_{countryName}_Country.json"));
 
-        CountrySeedRecord[]? seedRecords = await JsonSerializer.DeserializeAsync<CountrySeedRecord[]?>(fileStream, cancellationToken: ct);
+        double[][]? coordinates = JsonSerializer.Deserialize<double[][]?>(fileStream);
 
-        return seedRecords ?? [];
+        if (coordinates is null || coordinates.Length == 0)
+        {
+            throw new NullReferenceException("No coordinates is found.");
+        }
+
+        List<T> coordinatesReturn = [];
+
+        foreach (double[] lngLatArray in coordinates)
+        {
+            (double Lng, double Lat) lngLat = (lngLatArray[0], lngLatArray[1]);
+
+            coordinatesReturn.Add(transform(lngLat));
+        }
+
+        return coordinatesReturn.ToArray();
     }
 
     protected static async IAsyncEnumerable<PoiSeedRecord> getPoiSeedRecords(string countryName, [EnumeratorCancellation] CancellationToken ct = default)

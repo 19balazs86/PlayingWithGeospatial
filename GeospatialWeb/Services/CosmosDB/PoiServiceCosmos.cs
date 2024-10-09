@@ -106,15 +106,13 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
 
     private static async Task databaseSeed_Country(Database database, string countryName, CancellationToken ct = default)
     {
-        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
-
-        List<Position> geoFencePoints = seedRecords.Select(c => new Position(c.Lng, c.Lat)).ToList();
+        Position[] geoFence_Points = getGeoFenceCoordinates(countryName, point => new Position(point.Lng, point.Lat));
 
         var country = new Country
         {
             Id       = Guid.NewGuid(),
             Name     = countryName,
-            GeoFence = new Polygon(geoFencePoints)
+            GeoFence = new Polygon(geoFence_Points)
         };
 
         var properties = createContainerProperties(Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);

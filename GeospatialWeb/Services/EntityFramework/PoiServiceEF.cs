@@ -105,15 +105,13 @@ public sealed class PoiServiceEF(ApplicationDbContext _dbContext) : PoiServiceBa
 
     private async Task<Guid> databaseSeed_Country(string countryName, CancellationToken ct = default)
     {
-        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
-
-        Coordinate[] coordinates = seedRecords.Select(c => new Coordinate(c.Lng, c.Lat)).ToArray();
+        Coordinate[] geoFence_Points = getGeoFenceCoordinates(countryName, point => new Coordinate(point.Lng, point.Lat));
 
         var country = new Country
         {
             Id       = Guid.NewGuid(),
             Name     = countryName,
-            GeoFence = _geometryFactory.CreatePolygon(coordinates)
+            GeoFence = _geometryFactory.CreatePolygon(geoFence_Points)
         };
 
         await _dbContext.Countries.AddAsync(country, ct);

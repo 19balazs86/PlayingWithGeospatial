@@ -2,8 +2,6 @@
 
 public sealed record PoiSeedRecord(string Name, string Category, double Lng, double Lat);
 
-public sealed record CountrySeedRecord(double Lng, double Lat);
-
 public sealed class DbSeedService(IServiceScopeFactory _serviceScopeFactory) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

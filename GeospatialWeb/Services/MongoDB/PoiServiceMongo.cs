@@ -108,15 +108,13 @@ public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
 
     private static async Task databaseSeed_Country(IMongoCollection<Country> collection, string countryName, CancellationToken ct = default)
     {
-        CountrySeedRecord[] seedRecords = await getCountrySeedRecords(countryName, ct);
-
-        var geoFence_Coordinates = seedRecords.Select(c => new GeoJson2DGeographicCoordinates(c.Lng, c.Lat)).ToArray();
+        GeoJson2DGeographicCoordinates[] geoFence_Points = getGeoFenceCoordinates(countryName, point => GeoJson.Geographic(point.Lng, point.Lat));
 
         var country = new Country
         {
             Id       = Guid.NewGuid(),
             Name     = countryName,
-            GeoFence = GeoJson.Polygon(GeoJson.PolygonCoordinates(geoFence_Coordinates))
+            GeoFence = GeoJson.Polygon(GeoJson.PolygonCoordinates(geoFence_Points))
         };
 
         await collection.InsertOneAsync(country, cancellationToken: ct);
