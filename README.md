@@ -2,7 +2,7 @@
 
 - In this repository, I had some fun working with geospatial location
 - The application is quite simple: just a map for Points of Interest
-- I used LeafletJS with OpenStreetMap
+- I used LeafletJS with OpenStreetMap and Google Maps
 - For database solutions, you can choose from various implementations in [Program.cs](GeospatialWeb/Program.cs)
   - Azure Cosmos | Mongo | Redis | Postgres with EF
 - You can find the following geospatial queries
@@ -21,6 +21,12 @@
   - [Routing machine](https://www.liedman.net/leaflet-routing-machine)
   - [Overpass API](https://overpass-turbo.eu) 📓*Retrieving data (POIs) from OpenStreetMap*
   - [Turf.js](https://turfjs.org) - *Advanced geospatial analysis*
+
+#### 🗺️ `Google Maps`
+
+- [Maps Platform](https://developers.google.com/maps) | [Cloud Console](https://console.cloud.google.com/google/maps-apis)
+- JavaScript API: [Samples](https://developers.google.com/maps/documentation/javascript/examples) | [Reference](https://developers.google.com/maps/documentation/javascript/reference)
+- Getting started 📽️ [Create a billing account](https://youtu.be/uINleRduCWM?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi) | [Enable APIs and SDKs](https://youtu.be/n1UorU1PALk?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi) | [Generate and restrict API keys](https://youtu.be/2_HZObVbe-g?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi)
 
 #### 🗃️ `Cosmos`
 
