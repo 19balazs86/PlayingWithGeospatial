@@ -4,6 +4,8 @@
 
     var directionsService, directionsRenderer;
 
+    var geometryLib;
+
     var poiMarkers = [];
 
     var timer;
@@ -13,6 +15,8 @@
         const { Map } = await google.maps.importLibrary("maps");
 
         const { DirectionsService, DirectionsRenderer } = await google.maps.importLibrary("routes");
+
+        geometryLib = await google.maps.importLibrary('geometry');
 
         map = new Map(document.getElementById("map"), {
             center: { lat: 48.8584, lng: 2.2945 }, // France
@@ -95,9 +99,9 @@
     async function searchPoisDistance()
     {
         const center   = map.getCenter();
-        const distance = await distanceWestEast();
+        const distance = distanceWestEast() / 2;
 
-        let apiUrl = `/api/pois/distance?lat=${center.lat()}&lng=${center.lng()}&distance=${distance / 2}`;
+        let apiUrl = `/api/pois/distance?lat=${center.lat()}&lng=${center.lng()}&distance=${distance}`;
 
         await fetchPois(apiUrl);
     }
@@ -197,17 +201,9 @@
                 travelMode: google.maps.TravelMode.DRIVING,
             };
 
-            directionsService.route(routeInfo, (response, status) =>
-            {
-                if (status === 'OK')
-                {
-                    directionsRenderer.setDirections(response);
-                }
-                else
-                {
-                    window.alert('Directions request failed due to ' + status);
-                }
-            });
+            directionsService.route(routeInfo)
+                .then(response => directionsRenderer.setDirections(response))
+                .catch(error => alert('Failed to get directions'));
         }
     }
 
@@ -226,10 +222,8 @@
         }
     }
 
-    async function distanceWestEast()
+    function distanceWestEast()
     {
-        const geometry = await google.maps.importLibrary('geometry');
-
         // Get the bounds of the map
         const bounds    = map.getBounds();
         const northEast = bounds.getNorthEast();
@@ -239,7 +233,7 @@
         const left  = new google.maps.LatLng(southWest.lat(), southWest.lng());
         const right = new google.maps.LatLng(southWest.lat(), northEast.lng());
 
-        return geometry.spherical.computeDistanceBetween(left, right);
+        return geometryLib.spherical.computeDistanceBetween(left, right);
     }
 
     // Exposed functions
