@@ -1,44 +1,45 @@
-﻿const mapWrapper = (function () // IIFE
+﻿class MapWrapper
 {
-    var map = L.map('map').setView([48.8584, 2.2945], 15); // France
-
-    map.on('moveend', onMoveEnd_Map);
-    map.on('click',   onClick_Map);
-
-    var memoryMarker = createMemorymarker();
-
-    var poiMarkersLayer = initializeLayers();
-    var cachePoiMarkers = [];
-
-    var timer;
-
-    function onClick_Map(event)
+    constructor()
     {
-        memoryMarker.setLatLng(event.latlng);
+        this.map = L.map('map').setView([48.8584, 2.2945], 15); // France
+
+        this.map.on('moveend', this.onMoveEnd_Map.bind(this));
+        this.map.on('click',   this.onClick_Map.bind(this));
+
+        this.memoryMarker    = this.createMemorymarker();
+        this.poiMarkersLayer = this.initializeLayers();
+        this.cachePoiMarkers = [];
+        this.timer           = null;
     }
 
-    function onMoveEnd_Map()
+    onClick_Map(event)
     {
-        console.log(`Center: ${map.getCenter()} | Zoom: ${map.getZoom()}`)
+        this.memoryMarker.setLatLng(event.latlng);
+    }
+
+    onMoveEnd_Map()
+    {
+        console.log(`Center: ${this.map.getCenter()} | Zoom: ${this.map.getZoom()}`);
 
         if (document.getElementById('zoomRefreshCheckbox').checked)
         {
-            clearTimeout(timer);
+            clearTimeout(this.timer);
 
-            timer = setTimeout(() => searchPoisWithin(), 1000);
+            this.timer = setTimeout(() => this.searchPoisWithin(), 1000);
         }
     }
 
-    function initializeLayers()
+    initializeLayers()
     {
         // Example: https://leafletjs.com/examples/layers-control
 
-        const markersLayer = L.layerGroup().addTo(map); // Turn on by default with addTo(map)
+        const markersLayer = L.layerGroup().addTo(this.map); // Turn on by default with addTo(map)
 
         const openStreetMap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map); // Make it dafeult with addTo(map)
+        }).addTo(this.map); // Make it dafeult with addTo(map)
 
         const baseLayers = {
             "OpenStreetMap": openStreetMap
@@ -48,18 +49,17 @@
             "Poi": markersLayer
         };
 
-        L.control.layers(baseLayers, overlays).addTo(map);
+        L.control.layers(baseLayers, overlays).addTo(this.map);
 
         return markersLayer;
     }
 
-    function createMemorymarker()
+    createMemorymarker()
     {
         const divIconMarker = L.divIcon({ className: 'custom-marker' });
+        const center = this.map.getCenter();
 
-        const center = map.getCenter();
-
-        const marker = L.marker([center.lat, center.lng], { icon: divIconMarker }).addTo(map);
+        const marker = L.marker([center.lat, center.lng], { icon: divIconMarker }).addTo(this.map);
 
         marker.bindPopup("<b>Hello!</b> Place me anywhere and navigate back here");
 
@@ -68,58 +68,48 @@
         return marker;
     }
 
-    function findMe()
+    findMe()
     {
-        const location = memoryMarker.getLatLng();
+        const location = this.memoryMarker.getLatLng();
 
-        // if (!map.getBounds().contains(location)) map.setView(location);
+        // if (!this.map.getBounds().contains(location)) this.map.setView(location);
 
-        map.setView(location);
+        this.map.setView(location);
     }
 
-    async function searchPoisDistance()
+    async searchPoisDistance()
     {
-        const center = map.getCenter();
-        const bounds = map.getBounds();
+        const center = this.map.getCenter();
+        const bounds = this.map.getBounds();
 
         const distance = (bounds.getNorthWest().distanceTo(bounds.getSouthEast())) / 2;
 
-        let apiUrl = `/api/pois/distance?lat=${center.lat}&lng=${center.lng}&distance=${distance}`;
+        const apiUrl = `/api/pois/distance?lat=${center.lat}&lng=${center.lng}&distance=${distance}`;
 
-        await fetchPois(apiUrl);
+        await this.fetchPois(apiUrl);
     }
 
-    async function searchPoisWithin()
+    async searchPoisWithin()
     {
         // Center
-        const center = map.getCenter();
+        const center    = this.map.getCenter();
         const centerLng = center.lng;
         const centerLat = center.lat;
 
         // Bounds
-        const bounds = map.getBounds();
+        const bounds = this.map.getBounds();
         const nw = bounds.getNorthWest();
         const sw = bounds.getSouthWest();
         const se = bounds.getSouthEast();
         const ne = bounds.getNorthEast();
 
-        // Coordinates
-        const nwLng = nw.lng;
-        const nwLat = nw.lat;
-        const swLng = sw.lng;
-        const swLat = sw.lat;
-        const seLng = se.lng;
-        const seLat = se.lat;
-        const neLng = ne.lng;
-        const neLat = ne.lat;
-
         // Api URL + Query string
-        let apiUrl = `/api/pois/within?centerLng=${centerLng}&centerLat=${centerLat}&nwLng=${nwLng}&nwLat=${nwLat}&swLng=${swLng}&swLat=${swLat}&seLng=${seLng}&seLat=${seLat}&neLng=${neLng}&neLat=${neLat}`;
+        const apiUrl = `/api/pois/within?centerLng=${centerLng}&centerLat=${centerLat}&nwLng=${nw.lng}&nwLat=${nw.lat}&swLng=${sw.lng}&swLat=${sw.lat}&seLng=${se.lng}&seLat=${se.lat}&neLng=${ne.lng}&neLat=${ne.lat}`;
 
-        await fetchPois(apiUrl);
+        await this.fetchPois(apiUrl);
     }
 
-    async function fetchPois(apiUrl)
+    async fetchPois(apiUrl)
     {
         try
         {
@@ -132,44 +122,45 @@
 
             const poiArray = await response.json();
 
-            refreshPoiMarkersLayer(poiArray);
-        } catch (error)
+            this.refreshPoiMarkersLayer(poiArray);
+        }
+        catch (error)
         {
             console.error('Error fetching data:', error);
         }
     }
 
-    function refreshPoiMarkersLayer(poiArray)
+    refreshPoiMarkersLayer(poiArray)
     {
         // console.log(poiMarkersLayer.getLayers().length)
 
-        poiMarkersLayer.eachLayer(marker =>
+        this.poiMarkersLayer.eachLayer(marker =>
         {
             if (marker instanceof L.Marker)
             {
-                cachePoiMarkers.push(marker);
+                this.cachePoiMarkers.push(marker);
             }
         });
 
-        poiMarkersLayer.clearLayers();
+        this.poiMarkersLayer.clearLayers();
 
-        for (const poi of poiArray)
+        poiArray.forEach(poi =>
         {
-            const marker = cachePoiMarkers.pop() || L.marker([0, 0]);
+            const marker = this.cachePoiMarkers.pop() || L.marker([0, 0]);
 
             marker.setLatLng([poi.lat, poi.lng])
-                .bindPopup(`${poi.category}: <b>${poi.name}</b>`);
+                  .bindPopup(`${poi.category}: <b>${poi.name}</b>`);
 
             marker.PoiId = poi.id;
 
-            poiMarkersLayer.addLayer(marker);
-        }
+            this.poiMarkersLayer.addLayer(marker);
+        });
     }
+}
 
-    // Exposed functions
-    return {
-        onClick_FindMe: findMe,
-        onClick_SearchPoisDistance: searchPoisDistance,
-        onClick_SearchPoisWithin: searchPoisWithin
-    };
-})();
+// Usage
+const mapWrapper = new MapWrapper();
+
+//document.querySelector('.button.find-me').onclick = () => mapWrapper.findMe();
+//document.querySelector('.button.search-distance').onclick = () => mapWrapper.searchPoisDistance();
+//document.querySelector('.button.search-within').onclick = () => mapWrapper.searchPoisWithin();
