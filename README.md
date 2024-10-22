@@ -27,6 +27,7 @@
 - [Maps Platform](https://developers.google.com/maps) | [Cloud Console](https://console.cloud.google.com/google/maps-apis)
 - JavaScript API: [Samples](https://developers.google.com/maps/documentation/javascript/examples) | [Reference](https://developers.google.com/maps/documentation/javascript/reference)
 - Getting started 📽️ [Create a billing account](https://youtu.be/uINleRduCWM?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi) | [Enable APIs and SDKs](https://youtu.be/n1UorU1PALk?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi) | [Generate and restrict API keys](https://youtu.be/2_HZObVbe-g?list=PL2rFahu9sLJ0yio9sC7BclL4a9r76ygHi)
+- [Integrating Google Maps with Blazor and JS](https://youtu.be/ClNHH87sDM0) 📽️*41 min - Keep it simple, stupid*
 
 #### 🗃️ `Cosmos`
 
