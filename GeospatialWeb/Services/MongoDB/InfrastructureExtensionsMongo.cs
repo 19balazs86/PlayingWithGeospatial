@@ -21,5 +21,7 @@ public static class InfrastructureExtensionsMongo
 
             return new MongoClient(connectionString);
         });
+
+        services.AddSingleton<IMongoDbContext, MongoDbContext>();
     }
 }

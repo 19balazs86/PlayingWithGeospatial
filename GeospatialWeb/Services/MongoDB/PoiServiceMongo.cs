@@ -7,12 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace GeospatialWeb.Services.MongoDB;
 
-public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
+public sealed class PoiServiceMongo(IMongoDbContext _mongoContext) : PoiServiceBase
 {
-    private const string _databaseName = "PlayingWith_Geospatial";
-
-    private IMongoDatabase _database => _mongoClient.GetDatabase(_databaseName);
-
     public override IAsyncEnumerable<PoiResponse> FindPoisDistance(PoiRequest poiRequest, CancellationToken ct = default)
     {
         var point = GeoJsonUtils.Point(poiRequest.Lng, poiRequest.Lat);
@@ -52,8 +48,7 @@ public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
         var whereFilter = Builders<PoiData>.Filter.Where(p => p.CountryName == countryName);
         var andFilter   = Builders<PoiData>.Filter.And(whereFilter, poiFilter);
 
-        IAsyncCursor<PoiData> asyncCursor = await _database.GetCollection<PoiData>(PoiData.CollectionName)
-            .FindAsync(andFilter, cancellationToken: ct);
+        IAsyncCursor<PoiData> asyncCursor = await _mongoContext.PoiDataCollection.FindAsync(andFilter, cancellationToken: ct);
 
         while (await asyncCursor.MoveNextAsync(ct))
         {
@@ -74,7 +69,7 @@ public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
 
         var filter = Builders<Country>.Filter.GeoIntersects(c => c.GeoFence, point);
 
-        return await _database.GetCollection<Country>(Country.CollectionName)
+        return await _mongoContext.CountryCollection
             .Find(filter)
             .Project(c => c.Name)
             .FirstOrDefaultAsync(ct);
@@ -82,11 +77,7 @@ public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
 
     public override async Task DatabaseSeed(CancellationToken ct = default)
     {
-        using IAsyncCursor<string> asyncCursor = await _mongoClient.ListDatabaseNamesAsync(ct);
-
-        List<string> databaseNames = await asyncCursor.ToListAsync(ct);
-
-        bool isDatabaseExists = databaseNames.Contains(_databaseName);
+        bool isDatabaseExists = await _mongoContext.IsDatabaseExists(ct);
 
         if (isDatabaseExists)
         {
@@ -147,7 +138,7 @@ public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
         Expression<Func<TEntity, object>>? additionalIndexExp = null,
         CancellationToken ct = default)
     {
-        IMongoCollection<TEntity> countryCollection = _database.GetCollection<TEntity>(collectionName);
+        IMongoCollection<TEntity> countryCollection = _mongoContext.DataBase.GetCollection<TEntity>(collectionName);
 
         var geoIndexModel = new CreateIndexModel<TEntity>(Builders<TEntity>.IndexKeys.Geo2DSphere(geoIndexExp));
 
