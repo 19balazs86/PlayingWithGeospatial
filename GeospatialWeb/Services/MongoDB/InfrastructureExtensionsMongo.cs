@@ -8,13 +8,13 @@ public static class InfrastructureExtensionsMongo
 {
     public static void AddMongoInfrastructure(this IHostApplicationBuilder builder)
     {
-        ConventionRegistry.Register("Conventions", new MongoDbConventions(), _ => true);
+        ConventionRegistry.Register("Conventions", MongoDbConventions.Create(), _ => true);
 
         IServiceCollection services = builder.Services;
 
         services.AddSingleton<IPoiService, PoiServiceMongo>();
 
-        services.AddSingleton(serviceProvider =>
+        services.AddSingleton<IMongoClient>(serviceProvider =>
         {
             string connectionString = builder.Configuration.GetConnectionString("MongoDB")
                 ?? throw new NullReferenceException("Missing configuration MongoDB connection string");

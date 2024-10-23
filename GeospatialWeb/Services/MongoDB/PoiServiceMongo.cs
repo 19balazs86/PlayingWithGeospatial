@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace GeospatialWeb.Services.MongoDB;
 
-public sealed class PoiServiceMongo(MongoClient _mongoClient) : PoiServiceBase
+public sealed class PoiServiceMongo(IMongoClient _mongoClient) : PoiServiceBase
 {
     private const string _databaseName = "PlayingWith_Geospatial";
 
