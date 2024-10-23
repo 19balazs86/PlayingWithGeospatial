@@ -55,6 +55,7 @@
 
 #### ✨ `Miscellaneous`
 
+- [FREE maps with OpenFreeMap and MapLibre](https://youtu.be/UAQogFwyna0) (replace Google maps) 📽️*27 min - Syntax*
 - [OpenStreetMap](https://www.openstreetmap.org)
 - [GeoJSON.io](https://geojson.io)
 - [geoBoundaries](https://www.geoboundaries.org/index.html)
