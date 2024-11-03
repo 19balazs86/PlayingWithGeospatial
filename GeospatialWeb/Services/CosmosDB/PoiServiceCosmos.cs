@@ -164,6 +164,15 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
             .Attach();
 
         return await containerBuilder.CreateIfNotExistsAsync();
+
+        // This index would be beneficial if you also filter by category
+        // .WithCompositeIndex()
+        //     .Path($"/{nameof(PoiData.CountryName)}")
+        //     .Path($"/{nameof(PoiData.Category)}")
+        //     .Attach()
+
+        // This method creates the container properties
+        // .Build();
     }
 
     private static ContainerProperties createContainerProperties(string id, string partitionKeyPath, string spatialPath, SpatialType spatialType)
