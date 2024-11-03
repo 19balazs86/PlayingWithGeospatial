@@ -1,6 +1,7 @@
 ﻿using GeospatialWeb.Geography;
 using GeospatialWeb.Services.CosmosDB.Models;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.Azure.Cosmos.Spatial;
 using System.Linq.Expressions;
@@ -115,18 +116,14 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
             GeoFence = new Polygon(geoFence_Points)
         };
 
-        var properties = createContainerProperties(Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);
-
-        Container container = await database.CreateContainerIfNotExistsAsync(properties, cancellationToken: ct);
+        Container container = await getOrCreateContainer(database, Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);
 
         await container.CreateItemAsync(country, cancellationToken: ct);
     }
 
     private static async Task databaseSeed_POIs(Database database, string countryName, CancellationToken ct = default)
     {
-        var properties = createContainerProperties(PoiData.ContainerId, PoiData.PartitionKeyPath, PoiData.SpatialPath, SpatialType.Point);
-
-        Container container = await database.CreateContainerIfNotExistsAsync(properties, cancellationToken: ct);
+        Container container = await getOrCreateContainer(database, PoiData.ContainerId, PoiData.PartitionKeyPath, PoiData.SpatialPath, SpatialType.Point);
 
         TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(countryName));
 
@@ -147,8 +144,34 @@ public sealed class PoiServiceCosmos(CosmosClient _cosmosClient) : PoiServiceBas
         await batch.ExecuteAsync(ct);
     }
 
+    private static async Task<Container> getOrCreateContainer(
+        Database    database,
+        string      containerName,
+        string      partitionKeyPath,
+        string      spatialPath,
+        SpatialType spatialType)
+    {
+        // You can use either the fluent ContainerBuilder or the traditional one shown below
+        // Example: https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.cosmos.database.definecontainer
+        // Example: https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-manage-indexing-policy?tabs=dotnetv3%2Cpythonv3#dotnet-sdk
+
+        ContainerBuilder containerBuilder = database
+            .DefineContainer(containerName, partitionKeyPath)
+            .WithIndexingPolicy()
+                .WithSpatialIndex()
+                .Path(spatialPath, spatialType)
+                .Attach()
+            .Attach();
+
+        return await containerBuilder.CreateIfNotExistsAsync();
+    }
+
     private static ContainerProperties createContainerProperties(string id, string partitionKeyPath, string spatialPath, SpatialType spatialType)
     {
+        // The use of this method
+        // var properties = createContainerProperties(Country.ContainerId, Country.PartitionKeyPath, Country.SpatialPath, SpatialType.Polygon);
+        // Container container = await database.CreateContainerIfNotExistsAsync(properties, cancellationToken: ct);
+
         var sp = new SpatialPath { Path = spatialPath };
 
         sp.SpatialTypes.Add(spatialType);
