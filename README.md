@@ -59,6 +59,7 @@
 - [OpenStreetMap](https://www.openstreetmap.org)
 - [GeoJSON.io](https://geojson.io)
 - [geoBoundaries](https://www.geoboundaries.org/index.html)
+- [Geohash.es](https://www.geohash.es) 📓*Tools to help understand and visualize geohashes*
 
 ## Comparison summary
 - **Redis**: Fast for in-memory operations but could be limited by memory for large datasets. Complex geospatial queries and Polygon types are not supported. Better for real-time applications with smaller datasets.
