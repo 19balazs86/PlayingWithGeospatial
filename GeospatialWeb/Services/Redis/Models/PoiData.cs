@@ -37,4 +37,4 @@ public sealed class PoiData
     WriteIndented = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(PoiData))]
-public partial class PoiDataSerializationContext : JsonSerializerContext { }
+public sealed partial class PoiDataSerializationContext : JsonSerializerContext;

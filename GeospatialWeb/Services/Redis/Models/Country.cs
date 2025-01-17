@@ -24,4 +24,4 @@ public sealed class Country
     WriteIndented = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(Country))]
-public partial class CountrySerializationContext : JsonSerializerContext { }
+public sealed partial class CountrySerializationContext : JsonSerializerContext;
